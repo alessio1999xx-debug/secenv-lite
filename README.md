@@ -6,6 +6,8 @@ secenv-lite helps you find `.env` files that are tracked by git or not covered b
 - Default target: the current working directory (pass a repo path as the first argument).
 - Masked previews only; exit code `1` when at least one risk is reported.
 
+Need an encrypted vault you can commit, drift checks, or a hook that blocks plaintext keys? That is the full [SecEnv CLI](https://py-forge.com/products/secenv-cli?utm_source=github&utm_medium=readme&utm_campaign=secenv-lite) (one-time payment, yours to keep, no subscription). A table later in this README lists what lite does and what the paid tool adds. Or get every PyForge tool, current and future, with the [All-Access Pass](https://py-forge.com/pass?utm_source=github&utm_medium=readme&utm_campaign=secenv-lite) ($99, one payment).
+
 ## Install
 
 ```bash
@@ -13,8 +15,6 @@ curl -fsSLO https://raw.githubusercontent.com/alessio1999xx-debug/secenv-lite/ma
 chmod +x secenv_lite.py
 python secenv_lite.py --help
 ```
-
-(Until the repo is public, copy `secenv_lite.py` from this tree instead of curling.)
 
 ## Find .env files committed to git or missing from .gitignore
 
@@ -78,6 +78,50 @@ This is **not** a full secret scanner. It only matches common, high-confidence s
 
 Previews look like `abcd...xyz`. Full values are never printed.
 
+Example output, recorded 25 Nov 2026 (Europe/Rome) on a throwaway git repo that committed a `.env` with a fake OpenAI key. Exit code `1`. Paths are from that sample directory.
+
+```text
+================================================================================
+                        SECENV-LITE SCAN REPORT                                
+================================================================================
+Target                 : /tmp/demo-sec/my-app
+Git available          : True
+Git root               : /tmp/demo-sec/my-app
+.env-style files found : 1
+Findings               : 3
+Risks reported         : 3
+--------------------------------------------------------------------------------
+Findings (3 total):
+
+1. Kind      : tracked
+   Provider  : ENV_TRACKED_BY_GIT
+   Path      : /tmp/demo-sec/my-app/.env
+   Details   : .env is tracked by git (relative: .env). Plain secrets in history stay even after you delete the file.
+
+2. Kind      : secret
+   Provider  : OpenAI API Key
+   Path      : /tmp/demo-sec/my-app/.env
+   Line      : 1
+   Preview   : sk-p...bbb
+   Details   : OpenAI API Key match (masked preview)
+
+3. Kind      : secret
+   Provider  : Generic KEY/SECRET/TOKEN/PASSWORD assignment
+   Path      : /tmp/demo-sec/my-app/.env
+   Line      : 1
+   Key       : OPENAI_API_KEY
+   Preview   : sk-p...bbb
+   Details   : Generic KEY/SECRET/TOKEN/PASSWORD assignment match (masked preview)
+
+--------------------------------------------------------------------------------
+Suggested fixes:
+  1. Add .env (and .env.* if you use variants) to .gitignore, then commit the .gitignore change.
+  2. Stop tracking the file without deleting it locally: `git rm --cached -- <file>` (repeat for each tracked .env).
+  3. Caveat: removing the file from the index does NOT remove it from git history. If this repo was ever pushed, treat every value in that .env as exposed and rotate the keys at each provider.
+================================================================================
+Read-only scan. No files were modified. This checks common patterns only — it does not claim to find every possible secret.
+```
+
 ## Run it as a pre-commit hook or in CI
 
 ```bash
@@ -91,23 +135,24 @@ Use the exit code in a local pre-commit hook or a CI step so a tracked or unigno
 
 secenv-lite is a **read-only** check: find risky `.env` files and obvious keys, print a fix list. It never encrypts, decrypts or rewrites anything.
 
-The full **[SecEnv CLI](https://py-forge.com/products/secenv-cli?utm_source=github&utm_medium=lite_repo&utm_content=secenv-lite)** helps with:
+| Capability | Lite (free) | Paid SecEnv CLI |
+| --- | --- | --- |
+| Find `.env` files tracked by git or missing from `.gitignore` | Yes | Yes (`audit`) |
+| Flag obvious API keys and tokens (masked previews) | Yes | Yes (`audit`) |
+| Encrypt `.env` files into a vault you can commit | No | Yes (AES-256-CTR + HMAC-SHA256, in the Vault package) |
+| Inject secrets only while the app runs | No | Yes (`run`) |
+| Compare environments for drift | No | Yes (`drift`) |
+| Pre-commit hook that blocks plaintext keys | No (you can call lite yourself) | Yes (`install-hook`) |
+| Sync a profile to AWS or GCP secret managers | No | Yes (`sync`; uses the `aws` / `gcloud` CLIs) |
+| Output | Plain text or `--json` | CLI commands plus `audit` |
 
-- encrypting `.env` files into a vault you can commit (AES-256-CTR + HMAC-SHA256)
-- injecting secrets only while your app runs — no plaintext left on disk (`run`)
-- comparing environments for drift
-- an audit pre-commit hook that stops commits containing plaintext keys
-- syncing a profile to AWS or GCP secret managers
-
-One-time payment, yours to keep. No subscription.
-
-Or get every PyForge tool, current and future, with the [All-Access Pass](https://py-forge.com/pass?utm_source=github&utm_medium=lite_repo&utm_content=secenv-lite).
+One-time payment, yours to keep. No subscription. Full tool: [SecEnv CLI](https://py-forge.com/products/secenv-cli?utm_source=github&utm_medium=readme&utm_campaign=secenv-lite). Or get every PyForge tool, current and future, with the [All-Access Pass](https://py-forge.com/pass?utm_source=github&utm_medium=readme&utm_campaign=secenv-lite) ($99, one payment).
 
 ## Need more?
 
-Need the full version? **SecEnv CLI** on PyForge: https://py-forge.com/products/secenv-cli?utm_source=github&utm_medium=lite_repo&utm_content=secenv-lite
+Need the full version? **SecEnv CLI** on PyForge: https://py-forge.com/products/secenv-cli?utm_source=github&utm_medium=readme&utm_campaign=secenv-lite
 
-Or get every PyForge tool, current and future, with the All-Access Pass: https://py-forge.com/pass?utm_source=github&utm_medium=lite_repo&utm_content=secenv-lite
+Or get every PyForge tool, current and future, with the All-Access Pass: https://py-forge.com/pass?utm_source=github&utm_medium=readme&utm_campaign=secenv-lite
 
 ## Tests
 
